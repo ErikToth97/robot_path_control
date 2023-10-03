@@ -10,7 +10,7 @@ public class InverseMapControll : MonoBehaviour
     UR5 _inverse;
     private List<Transform> joints;
     public int branchInd = 0;
-    public double tcpdist = 10;
+    public double tcpdist = 1000;
     public GameObject endEffector, robotArm;
     private Vector3 lastPos;
 
@@ -43,7 +43,7 @@ public class InverseMapControll : MonoBehaviour
         lastPos = pos;
         double[] full = new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         _inverse.SetInputVariable(new string[] { "Ox", "Oy", "Oz", "ax", "ay", "az", "bx", "by", "bz", "cx", "cy", "cz","tcpdist" }, 
-            new double[] { -pos.x, pos.z, pos.y, 1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0, tcpdist});
+            new double[] { -pos.x, pos.z, pos.y, 1.0, 0, 0, 0, 1,0, 0, 0, 1, tcpdist});
         _inverse.Calculate();
         var inverseBranches = _inverse.GetOutputVariables(new string[] { "q1", "q2", "q3", "q4", "q5", "q6" }, _inverse.BranchValid);
 
@@ -108,7 +108,7 @@ public class InverseMapControll : MonoBehaviour
         var pos = endEffector.transform.position * 1000f;
         if (lastPos != pos)
         {   // 0 +20 -45
-            double[] angles = GetInverse(null, new double[] { -Math.PI/2, Math.PI / 2, 0, Math.PI, 0, 0 }, -1);
+            double[] angles = GetInverse(null, new double[] { -Math.PI/2, Math.PI / 2, 0, Math.PI/2, Math.PI, 0 }, -1);
             if(angles.Length == 6)
             {
                 float[] anglesf = new float[6];

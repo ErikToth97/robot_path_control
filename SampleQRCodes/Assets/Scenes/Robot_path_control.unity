@@ -312,7 +312,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   branchInd: 2
-  tcpdist: 10
+  tcpdist: 100
   endEffector: {fileID: 1748290954}
   robotArm: {fileID: 0}
   defaultValues: 1
@@ -367,7 +367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   branchInd: 0
-  tcpdist: 10
+  tcpdist: 100
   endEffector: {fileID: 1748290954}
   robotArm: {fileID: 0}
   defaultValues: 1
@@ -656,7 +656,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   branchInd: 1
-  tcpdist: 10
+  tcpdist: 100
   endEffector: {fileID: 1748290954}
   robotArm: {fileID: 0}
   defaultValues: 1

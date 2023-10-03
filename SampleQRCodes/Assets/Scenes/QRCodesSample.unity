@@ -4103,7 +4103,7 @@ PrefabInstance:
     - target: {fileID: 1512489658779573554, guid: afc6f6f107600da4f87ff98f11e456a0,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4213248446689214135, guid: afc6f6f107600da4f87ff98f11e456a0,
         type: 3}
@@ -7418,7 +7418,7 @@ PrefabInstance:
     - target: {fileID: 1512489658779573554, guid: afc6f6f107600da4f87ff98f11e456a0,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4342205422538034735, guid: afc6f6f107600da4f87ff98f11e456a0,
         type: 3}
@@ -8673,6 +8673,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e57d650dc8a86ac4592ea8fa989ac257, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  branchInd: 0
+  tcpdist: 1000
+  endEffector: {fileID: 0}
+  robotArm: {fileID: 0}
+  defaultValues: 1
+  numOfJoint: 6
+  axisList: 79007a007a007a0079007a00
 --- !u!1 &971830109
 GameObject:
   m_ObjectHideFlags: 0
