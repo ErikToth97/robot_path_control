@@ -312,7 +312,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   branchInd: 2
-  tcpdist: 100
+  tcpdist: 140
   endEffector: {fileID: 1748290954}
   robotArm: {fileID: 0}
   defaultValues: 1
@@ -367,7 +367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   branchInd: 0
-  tcpdist: 100
+  tcpdist: 140
   endEffector: {fileID: 1748290954}
   robotArm: {fileID: 0}
   defaultValues: 1
@@ -656,7 +656,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   branchInd: 1
-  tcpdist: 100
+  tcpdist: 140
   endEffector: {fileID: 1748290954}
   robotArm: {fileID: 0}
   defaultValues: 1
@@ -966,7 +966,7 @@ PrefabInstance:
     - target: {fileID: 5837558569941033697, guid: f9f1a75618653de418cca0334ae55a6c,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 9199261849990390558, guid: f9f1a75618653de418cca0334ae55a6c,
