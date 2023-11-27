@@ -98,8 +98,8 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
             initializedHands = true;
             head.transform.position = new Vector3(head.transform.position.x, head.transform.position.y, head.transform.position.z + armLength - 0.5f);
 
-            leftShoulder.transform.SetParent(shoulderConnector, true);
-            rightShoulder.transform.SetParent(shoulderConnector, true);
+            leftShoulder.transform.SetParent(shoulderConnector.parent, true);
+            rightShoulder.transform.SetParent(shoulderConnector.parent, true);
 
             Debug.Log("RIGHT SHOULDER SET");
         }
