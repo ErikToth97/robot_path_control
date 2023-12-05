@@ -18,20 +18,23 @@ public class ArmController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var leftEndAngles = CalcAngles(leftArm.transform, leftHand.transform.position);
+        var leftEndAngles = CalcAngles(leftArm.transform.position, leftHand.transform.position);
         SetAngle(true, leftEndAngles);
-
-        var rightEndAngles = CalcAngles(rightArm.transform, rightHand.transform.position);
-        SetAngle(false, rightEndAngles);
-        var diff = rightHand.transform.position - rightArm.transform.parent.position;
+        var diff = leftHand.transform.position - leftArm.transform.parent.position;
         var atan = Mathf.Atan2(diff.x, diff.z);
-        rightArm.transform.parent.rotation = Quaternion.Euler(0, atan*Mathf.Rad2Deg, -rightHand.transform.rotation.eulerAngles.y); 
+        leftArm.transform.parent.rotation = Quaternion.Euler(0, atan * Mathf.Rad2Deg, -leftHand.transform.rotation.eulerAngles.y);
+
+        var rightEndAngles = CalcAngles(rightArm.transform.position, rightHand.transform.position);
+        SetAngle(false, rightEndAngles);
+        diff = rightHand.transform.position - rightArm.transform.parent.position;
+        atan = Mathf.Atan2(diff.x, diff.z);
+        rightArm.transform.parent.rotation = Quaternion.Euler(0, atan*Mathf.Rad2Deg, -rightHand.transform.localEulerAngles.y); 
     }
 
-    float[] CalcAngles(Transform joint1, Vector3 pos, bool inverse = true)
+    float[] CalcAngles(Vector3 armPos, Vector3 handPos, bool inverse = true)
     {
-        float dist = Vector3.Distance(joint1.position, pos);
-        Vector3 diff = pos - joint1.position;
+        float dist = Vector3.Distance(armPos, handPos);
+        Vector3 diff = armPos - armPos;
         float atan = Mathf.Atan2(-diff.y, diff.z);
         float joint0Angle = 0;
         float joint1Angle = 0;
@@ -87,13 +90,16 @@ public class ArmController : MonoBehaviour
     {
         if (left)
         {
-            Vector3 Euler = leftArm.transform.localEulerAngles;
-            Euler.x = angle[0];
-            leftArm.transform.localRotation = Quaternion.Euler(Euler);
+            //Vector3 Euler = leftArm.transform.localEulerAngles;
+            //Euler.x = angle[0];
+            //leftArm.transform.localRotation = Quaternion.Euler(Euler);
 
-            Euler = leftForeArm.localEulerAngles;
-            Euler.x = angle[1];
-            leftForeArm.transform.localRotation = Quaternion.Euler(Euler);
+            //Euler = leftForeArm.localEulerAngles;
+            //Euler.x = angle[1];
+            //leftForeArm.transform.localRotation = Quaternion.Euler(Euler);
+
+            leftArm.transform.localRotation = Quaternion.Euler(angle[0], 0, 0);
+            leftForeArm.transform.localRotation = Quaternion.Euler(angle[1], 0, 0);
         }
         else
         {

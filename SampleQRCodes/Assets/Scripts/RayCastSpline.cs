@@ -11,6 +11,14 @@ public class RayCastSpline : MonoBehaviour
         
     }
 
+    // check if current pos is lower or higher than obstacle, and check the next possible synconization point too
+    // if it is higher higher -> spline to downwards data
+    // below below -> spline upwards data
+    // otherwise check both and chose shorter one
+
+    // making sure the lower parts of the robot does not collide:
+    //
+
     // Update is called once per frame
     void Update()
     {
@@ -21,12 +29,12 @@ public class RayCastSpline : MonoBehaviour
         {
             hitObj.transform.position = hit.point;
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.down) * hit.distance, Color.yellow);
-            Debug.Log("Did Hit");
+            //Debug.Log("Did Hit");
         }
         else
         {
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.down) * 5, Color.white);
-            Debug.Log("Did not Hit");
+            //Debug.Log("Did not Hit");
         }
     }
 }
