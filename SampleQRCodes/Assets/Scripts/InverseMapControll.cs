@@ -11,10 +11,12 @@ public class InverseMapControll : MonoBehaviour
     private List<Transform> joints;
     public int branchInd = 0;
     public double tcpdist = 100;
-    public GameObject endEffector, robotArm;
+    public GameObject endEffector;
     private Vector3 lastPos;
     private Quaternion lastOri;
 
+    private bool lastAnglesSet = false;
+    private double[] lastAngles;
     private static float[] testangles;
     private static List<float[]> rotAxis;
     public bool defaultValues = true;
@@ -37,6 +39,7 @@ public class InverseMapControll : MonoBehaviour
         _inverse = new UR5();
         lastPos = new Vector3();
         lastOri = new Quaternion();
+        lastAngles = new double[6];
     }
 
     public double[] GetInverse(double[] pose = null, double[] jointOffsets = null, int gripperId = -1)
@@ -67,7 +70,8 @@ public class InverseMapControll : MonoBehaviour
         List<int> validBranchInd = new List<int>();
         for (int b = 0; b < inverseBranches.Length; ++b)
         {
-            if (inverseBranches[b][1] > -100*Mathf.Deg2Rad && inverseBranches[b][1] < 100* Mathf.Deg2Rad)
+            var degInvB = moveAngleIntoRange(inverseBranches[b][1] * Mathf.Rad2Deg);
+            if (degInvB > -100.0 && degInvB < 100.0)
                 validBranchInd.Add(b);
         }
         double[][] validBranches = new double[validBranchInd.Count][];
@@ -77,32 +81,63 @@ public class InverseMapControll : MonoBehaviour
         }
         if (validBranches.Length == 0)
             return new double[] { 0 };
-        bestJoints = validBranches[0];
-        if (validBranchInd.Count > branchInd)
-            bestJoints = validBranches[branchInd];
-        //for (int b = 0; b < inverseBranches.Length; ++b)
-        //{
-        //    double jointRotSum = 0, calculated, alternative;
-        //    double[] branchBest = new double[6];
-        //    for (int j = 0; j < inverseBranches[b].Length; ++j)
-        //    {
-        //        // Check +-360 rotations, in valid direction
-        //        calculated = inverseBranches[b][j];
-        //        branchBest[j] = calculated;
-        //        alternative = calculated < 0 ? calculated + (2 * Math.PI) : calculated - (2 * Math.PI);
-        //        if (Math.Abs(actualJoints[j] - calculated) > Math.Abs(actualJoints[j] - alternative))
-        //            branchBest[j] = alternative;
-        //        // Smallest distance to actual joints
-        //        jointRotSum += Math.Abs(actualJoints[j] - branchBest[j]);
-        //    }
-        //    if (jointRotSum < bestJointRotSum)
-        //    {
-        //        bestJointRotSum = jointRotSum;
-        //        branchBest.CopyTo(bestJoints, 0);
-        //    }
-
-        //}
-
+        double[] diffs = new double[validBranches.Length];
+        if (lastAnglesSet)
+        {
+            double minDiff = 100000.0;
+            int minInd = -1;
+            for (int j = 0; j < validBranches.Length; j++)
+            {
+                double totalAngleDiff = 0;
+                var movedBranchValues = moveAnglesIntoRange(validBranches[j], true);
+                for (int i = 0; i < 6; i++)
+                {
+                    var diff = Math.Abs(movedBranchValues[i] - lastAngles[i]);
+                    while (diff > Math.PI)
+                        diff -= Math.PI;
+                    diff = moveAngleIntoRange(diff, true);
+                    totalAngleDiff += diff;
+                }
+                if (totalAngleDiff < minDiff)
+                {
+                    minDiff = totalAngleDiff;
+                    minInd = j;
+                }
+                diffs[j] = totalAngleDiff;
+            }
+            if (minInd > -1)
+            {
+                //if (minDiff > 2.0)
+                //{
+                //    Debug.Log("FLIPPED");
+                //    return new double[] { 0 };
+                //}
+                bestJoints = validBranches[minInd];
+                lastAngles = moveAnglesIntoRange(bestJoints, true);
+            }
+        }
+        else
+        {
+            bestJoints = validBranches[0];
+            if (validBranchInd.Count > branchInd)
+                bestJoints = validBranches[branchInd];
+            for (int i = 0; i < validBranchInd.Count; i++)
+            {
+                var joint1Value = moveAngleIntoRange(validBranches[i][1], true);
+                if (joint1Value > -Math.PI / 2 && joint1Value < bestJoints[1])
+                {
+                    bestJoints = validBranches[i];
+                    bestJoints[1] = joint1Value;
+                }
+                else if (joint1Value < -Math.PI / 2 && joint1Value > bestJoints[1])
+                {
+                    bestJoints = validBranches[i];
+                    bestJoints[1] = joint1Value;
+                }
+            }
+            lastAngles = moveAnglesIntoRange(bestJoints, true);
+            lastAnglesSet = true;
+        }
         double[] branchMultiply = new double[6] { 1, 1, 1, 1, -1, 1 };
         for (int i = 0; i < 6; i++)
         {
@@ -111,7 +146,6 @@ public class InverseMapControll : MonoBehaviour
         }
         return bestJoints;
     }
-
 
     // Update is called once per frame
     void Update()
@@ -146,6 +180,49 @@ public class InverseMapControll : MonoBehaviour
             rotations[3] += 180;
             joints[5].localRotation = Quaternion.Euler(rotations[5] * rotAxis[5][0], rotations[5] * rotAxis[5][1], rotations[5] * rotAxis[5][2]);
         }
+    }
+
+    private double moveAngleIntoRange(double angle, bool rad = false)
+    {
+        if (rad)
+        {
+            if (angle > Math.PI)
+                angle -= 2 * Math.PI;
+            if (angle < -Math.PI)
+                angle += 2 * Math.PI;
+        }
+        else
+        {
+            if (angle > 180)
+                angle -= 360;
+            if (angle < -180)
+                angle += 360;
+        }
+        return angle;
+    }
+
+    private double[] moveAnglesIntoRange(double[] angles, bool rad = false)
+    {
+        double[] ret = new double[6];
+        for (int i = 0; i < 6; i++)
+        {
+            ret[i] = angles[i];
+            if (rad)
+            {
+                if (angles[i] > Math.PI)
+                    ret[i] = angles[i]- 2 * Math.PI;
+                if (angles[i] < -Math.PI)
+                    ret[i] = angles[i] + 2 * Math.PI;
+            }
+            else
+            {
+                if (angles[i] > 180)
+                    ret[i] = angles[i]-360;
+                if (angles[i] < -180)
+                    ret[i] = angles[i] + 360;
+            }
+        }
+        return ret;
     }
 
     private void initAxis(bool defValues = true)
