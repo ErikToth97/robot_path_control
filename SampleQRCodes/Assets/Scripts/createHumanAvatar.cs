@@ -28,13 +28,15 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
             // ...
         }
         armLength = 0.0f;
-
     }
 
     // Update is called once per frame
     void Update()
     {
-        head.transform.position = new Vector3(Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z+0.5f);
+        if (!initializedHands)
+            head.transform.position = new Vector3(Camera.main.transform.position.x, Camera.main.transform.position.y, Camera.main.transform.position.z + 0.5f);
+        else
+            head.transform.position = Camera.main.transform.position;
         var yRotation = Camera.main.transform.rotation.eulerAngles.y;
         head.transform.rotation = Quaternion.Euler(0f, yRotation, 0f);
         if(rightShoulder != null && rightHand.transform.position != new Vector3())
@@ -89,7 +91,7 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
             var connectorPosy = (posY + leftShoulder.transform.position.y) / 2f;
             var connectorScaleY = Mathf.Abs(posX - leftShoulder.transform.position.x)+0.045f;
             shoulderConnector.position = new Vector3(shoulderConnector.position.x, connectorPosy, shoulderConnector.position.z);
-            shoulderConnector.localScale = new Vector3(shoulderConnector.localScale.x, connectorScaleY/2.0f, shoulderConnector.localScale.z);
+            shoulderConnector.localScale = new Vector3(shoulderConnector.localScale.x, connectorScaleY/2.0f/10.0f, shoulderConnector.localScale.z);
             var lclPos = rightShoulder.transform.localPosition;
             rightShoulder.transform.localPosition = new Vector3(lclPos.x + 0.03f, lclPos.y, lclPos.z);
             lclPos = leftShoulder.transform.localPosition;
@@ -101,6 +103,8 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
             leftShoulder.transform.SetParent(shoulderConnector.parent, true);
             rightShoulder.transform.SetParent(shoulderConnector.parent, true);
 
+            head.GetComponent<ArmController>().setHands(rightHand.gameObject, leftHand.gameObject, armLength);
+            initializedHands = true;
             Debug.Log("RIGHT SHOULDER SET");
         }
     }

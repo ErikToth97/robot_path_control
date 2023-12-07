@@ -5,30 +5,38 @@ using UnityEngine;
 public class ArmController : MonoBehaviour
 {
     public GameObject leftArm, rightArm, leftHand, rightHand;
-    private Transform leftForeArm, rightForeArm;
+    private Transform leftForeArm, rightForeArm, head;
     public float[] lengths;
+    private bool handsSet;
     // Start is called before the first frame update
     void Start()
     {
         lengths = new float[2] { 0.9f, 0.75f };
         leftForeArm = leftArm.transform.Find("LeftForeArm");
         rightForeArm = rightArm.transform.Find("RightForeArm");
+        head = leftForeArm.root;
+        handsSet = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        var leftEndAngles = CalcAngles(leftArm.transform.position, leftHand.transform.position);
-        SetAngle(true, leftEndAngles);
-        var diff = leftHand.transform.position - leftArm.transform.parent.position;
-        var atan = Mathf.Atan2(diff.x, diff.z);
-        leftArm.transform.parent.rotation = Quaternion.Euler(0, atan * Mathf.Rad2Deg, -leftHand.transform.rotation.eulerAngles.y);
+        if (true || handsSet)
+        {
+            var leftEndAngles = CalcAngles(leftArm.transform.position, leftHand.transform.position);
+            SetAngle(true, leftEndAngles);
+            var diff = leftHand.transform.position - leftArm.transform.parent.position;
+            var atan = Mathf.Atan2(diff.x, diff.z);
+            var lHandRot = Quaternion.Inverse(head.rotation) * leftHand.transform.rotation;
+            leftArm.transform.parent.rotation = Quaternion.Euler(0, atan * Mathf.Rad2Deg, -lHandRot.eulerAngles.y);
 
-        var rightEndAngles = CalcAngles(rightArm.transform.position, rightHand.transform.position);
-        SetAngle(false, rightEndAngles);
-        diff = rightHand.transform.position - rightArm.transform.parent.position;
-        atan = Mathf.Atan2(diff.x, diff.z);
-        rightArm.transform.parent.rotation = Quaternion.Euler(0, atan*Mathf.Rad2Deg, -rightHand.transform.localEulerAngles.y); 
+            var rightEndAngles = CalcAngles(rightArm.transform.position, rightHand.transform.position);
+            SetAngle(false, rightEndAngles);
+            diff = rightHand.transform.position - rightArm.transform.parent.position;
+            atan = Mathf.Atan2(diff.x, diff.z);
+            var rHandRot = Quaternion.Inverse(head.rotation) * rightHand.transform.rotation;
+            rightArm.transform.parent.rotation = Quaternion.Euler(0, atan * Mathf.Rad2Deg, -rHandRot.eulerAngles.y);
+        }
     }
 
     float[] CalcAngles(Vector3 armPos, Vector3 handPos, bool inverse = true)
@@ -107,5 +115,25 @@ public class ArmController : MonoBehaviour
             rightForeArm.transform.localRotation = Quaternion.Euler(angle[1], 0, 0);
         }
 
+    }
+
+    public void setHands(GameObject rHand, GameObject lHand, float armLenght)
+    {
+        rightHand = rHand;
+        leftHand = lHand;
+        handsSet = true;
+        if (armLenght < 0f)
+            armLenght = 1.65f;
+        var total = lengths[0] + lengths[1];
+        var relLenght = lengths[0] / total * armLenght;
+        var relLenghtForeArm = lengths[1] / total * armLenght;
+        var leftArmMesh = leftArm.transform.GetChild(0);
+        var rightArmMesh = rightArm.transform.GetChild(0);
+        leftArmMesh.transform.localScale = new Vector3(0.02f, relLenght/20.0f, 0.02f);
+        rightArmMesh.transform.localScale = new Vector3(0.02f, relLenght / 20.0f, 0.02f);
+        var leftForeArmMesh = leftForeArm.transform.GetChild(0);
+        var rightForeArmMesh = rightForeArm.transform.GetChild(0);
+        leftForeArmMesh.transform.localScale = new Vector3(0.02f, relLenghtForeArm / 20.0f, 0.02f);
+        rightForeArmMesh.transform.localScale = new Vector3(0.02f, relLenghtForeArm / 20.0f, 0.02f);
     }
 }

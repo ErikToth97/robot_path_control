@@ -24,7 +24,7 @@ public class InverseMapControll : MonoBehaviour
     private double[] lastAngles;
     private static float[] testangles;
     private static List<float[]> rotAxis;
-    public bool defaultValues = true, savedPath = true, pause = false;
+    public bool defaultValues = true, savedPath = true, pause = false, startSavedPath = false;
     public int numOfJoint = 6;
     public char[] axisList = new char[6] {'y', 'z', 'z', 'z', 'y', 'z', };
     void Start()
@@ -175,7 +175,7 @@ public class InverseMapControll : MonoBehaviour
             startTime = Time.time - lastTime;
             return;
         }
-        if (savedPath)
+        if (savedPath && startSavedPath)
         {
             lastTime = Time.time - startTime;
             var timeDiff = Time.time - startTime;
@@ -226,6 +226,10 @@ public class InverseMapControll : MonoBehaviour
                     controllRobot(newAngles);
                 }
             }
+            else
+            {
+                startSavedPath = false;
+            }
 
         }
         else
@@ -265,6 +269,25 @@ public class InverseMapControll : MonoBehaviour
             rotations[3] += 180;
             joints[5].localRotation = Quaternion.Euler(rotations[5] * rotAxis[5][0], rotations[5] * rotAxis[5][1], rotations[5] * rotAxis[5][2]);
         }
+    }
+
+    public void startSaved()
+    {
+        if (startSavedPath)
+        {
+            startSavedPath = false;
+        }
+        else
+        {
+            ind = 1;
+            startTime = Time.time;
+            pause = false;
+            startSavedPath = true;
+        }
+    }
+    public void pauseSimu()
+    {
+        pause = !pause;
     }
 
     private void controllFutureRobot(float[] rotations)

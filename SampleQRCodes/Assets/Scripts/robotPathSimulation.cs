@@ -8,6 +8,7 @@ public class robotPathSimulation : MonoBehaviour
     private List<Vector3> syncPositions;
     private float stepTime = 3.0f, startTime;
     private int ind = 0;
+    private bool simuStarted = false;
     public GameObject robotArm;
     void Start()
     {
@@ -27,28 +28,46 @@ public class robotPathSimulation : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(ind < syncPositions.Count)
+        if (simuStarted)
         {
-            var timeDiff = Time.time - startTime;
-            if (timeDiff >= stepTime)
+            if (ind < syncPositions.Count)
             {
-                startTime = Time.time;
-                this.gameObject.transform.position = syncPositions[ind];
-                ind++;
-                var angles = robotArm.GetComponent<InverseMapControll>().getAngles();
-                string debLog = "";
-                for (int i = 0; i < 6; i++)
+                var timeDiff = Time.time - startTime;
+                if (timeDiff >= stepTime)
                 {
-                    debLog += angles[i] + " ";
+                    startTime = Time.time;
+                    this.gameObject.transform.position = syncPositions[ind];
+                    ind++;
+                    var angles = robotArm.GetComponent<InverseMapControll>().getAngles();
+                    string debLog = "";
+                    for (int i = 0; i < 6; i++)
+                    {
+                        debLog += angles[i] + " ";
+                    }
+                    Debug.Log(debLog);
                 }
-                Debug.Log(debLog);
+                else
+                {
+                    var t = timeDiff / stepTime;
+                    var newPos = (1 - t) * syncPositions[ind - 1] + t * syncPositions[ind];
+                    this.gameObject.transform.position = newPos;
+                }
             }
-            else {
-                var t = timeDiff / stepTime;
-                var newPos = (1 - t) * syncPositions[ind - 1] + t * syncPositions[ind];
-                this.gameObject.transform.position = newPos;
-            }
+            else
+                simuStarted = false;
         }
       
+    }
+
+    public void startSimulation()
+    {
+        if (!simuStarted)
+        {
+            ind = 1;
+            startTime = Time.time;
+            simuStarted = true;
+        }
+        else
+            simuStarted = false;
     }
 }
