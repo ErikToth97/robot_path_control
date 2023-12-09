@@ -6,8 +6,9 @@ public class ArmController : MonoBehaviour
 {
     public GameObject leftArm, rightArm, leftHand, rightHand;
     private Transform leftForeArm, rightForeArm, head;
+    private float[] baseLenght = new float[2] { 0.9f, 0.75f };
     public float[] lengths;
-    private bool handsSet;
+    public bool handsSet = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -15,20 +16,32 @@ public class ArmController : MonoBehaviour
         leftForeArm = leftArm.transform.Find("LeftForeArm");
         rightForeArm = rightArm.transform.Find("RightForeArm");
         head = leftForeArm.root;
-        handsSet = false;
+        //handsSet = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (true || handsSet)
+        if (handsSet)
         {
-            var leftEndAngles = CalcAngles(leftArm.transform.position, leftHand.transform.position);
-            SetAngle(true, leftEndAngles);
-            var diff = leftHand.transform.position - leftArm.transform.parent.position;
-            var atan = Mathf.Atan2(diff.x, diff.z);
+            var diff = invTM(head,leftHand.transform) - invTM(head, leftArm.transform.parent);
+            var atan = Mathf.Atan2(diff.x, diff.z) * Mathf.Rad2Deg;
             var lHandRot = Quaternion.Inverse(head.rotation) * leftHand.transform.rotation;
-            leftArm.transform.parent.rotation = Quaternion.Euler(0, atan * Mathf.Rad2Deg, -lHandRot.eulerAngles.y);
+            Quaternion _lookRotation = Quaternion.LookRotation((leftHand.transform.transform.position - leftArm.transform.parent.position).normalized);
+            leftArm.transform.parent.rotation = _lookRotation;
+
+            //-lHandRot.eulerAngles.y
+            var relArmPos = invTM(leftArm.transform.parent, leftArm.transform);
+            var relHandPos = invTM(leftArm.transform.parent, leftHand.transform);
+            var hadREL = relHandPos - relArmPos;
+            Debug.Log(hadREL);
+            var leftEndAngles = CalcAngles(relArmPos,relHandPos);
+            SetAngle(true, leftEndAngles);
+            leftArm.transform.parent.rotation = _lookRotation * Quaternion.Euler(0, 0, -lHandRot.eulerAngles.y);
+          
+
+           // var rot = leftArm.transform.rotation.eulerAngles;
+            //leftArm.transform.rotation = Quaternion.Euler(rot.x, rot.y, );
 
             var rightEndAngles = CalcAngles(rightArm.transform.position, rightHand.transform.position);
             SetAngle(false, rightEndAngles);
@@ -39,11 +52,11 @@ public class ArmController : MonoBehaviour
         }
     }
 
-    float[] CalcAngles(Vector3 armPos, Vector3 handPos, bool inverse = true)
+    float[] CalcAngles(Vector3 armPos, Vector3 handPos, bool inverse = false)
     {
         float dist = Vector3.Distance(armPos, handPos);
-        Vector3 diff = armPos - armPos;
-        float atan = Mathf.Atan2(-diff.y, diff.z);
+        Vector3 diff = handPos-armPos;
+        float atan = Mathf.Atan2(diff.z, diff.x);
         float joint0Angle = 0;
         float joint1Angle = 0;
         if (dist > lengths[0]+lengths[1])
@@ -65,24 +78,22 @@ public class ArmController : MonoBehaviour
             joint0Angle = q1 * Mathf.Rad2Deg;
             joint1Angle = q2 * Mathf.Rad2Deg;
 
-            //float cosAlpha = (dist * dist + lengths[0] * lengths[0] - lengths[1] * lengths[1]) / (2 * dist * lengths[0]);
-            //float alpha = Mathf.Acos(cosAlpha) * Mathf.Rad2Deg;
-
-            //float cosBeta = (lengths[0] * lengths[0] + lengths[1] * lengths[1] - dist * dist) / (2 * lengths[1] * lengths[0]);
-            //float beta = Mathf.Acos(cosBeta) * Mathf.Rad2Deg;
-            //joint0Angle = (atan - alpha)-180f;
-            //joint1Angle = 180f - beta;
         }
         var orig1 = joint0Angle;
         var orig2 = joint1Angle;
 
-        joint0Angle = normAngle(joint0Angle);
-        joint1Angle = normAngle(joint1Angle);
+        joint0Angle = normAngle(-joint0Angle);
+        joint1Angle = normAngle(-joint1Angle);
         if (joint0Angle < 0f || joint1Angle < 0f)
         {
-            Debug.Log("WTF");
+            Debug.Log("WTF---------------------------------------------");
         }
         return new float[2] { joint0Angle, joint1Angle };
+    }
+
+    Vector3 invTM(Transform tm, Transform obj)
+    {
+        return tm.InverseTransformPoint(obj.position) * head.transform.localScale.y;
     }
 
     float normAngle(float angle)
@@ -105,8 +116,9 @@ public class ArmController : MonoBehaviour
             //Euler = leftForeArm.localEulerAngles;
             //Euler.x = angle[1];
             //leftForeArm.transform.localRotation = Quaternion.Euler(Euler);
-
-            leftArm.transform.localRotation = Quaternion.Euler(angle[0], 0, 0);
+            var rot = leftArm.transform.rotation.eulerAngles;
+            //leftArm.transform.rotation = Quaternion.Inverse(leftArm.transform.parent.rotation)*Quaternion.Euler(angle[0]-90f, 0,0);
+            leftArm.transform.localRotation = Quaternion.Euler(angle[0]+90f, 0, 0);
             leftForeArm.transform.localRotation = Quaternion.Euler(angle[1], 0, 0);
         }
         else
@@ -124,16 +136,29 @@ public class ArmController : MonoBehaviour
         handsSet = true;
         if (armLenght < 0f)
             armLenght = 1.65f;
-        var total = lengths[0] + lengths[1];
-        var relLenght = lengths[0] / total * armLenght;
-        var relLenghtForeArm = lengths[1] / total * armLenght;
+        var total = baseLenght[0] + baseLenght[1];
+        var relLenght = baseLenght[0] / total * armLenght;
+        var relLenghtForeArm = baseLenght[1] / total * armLenght;
         var leftArmMesh = leftArm.transform.GetChild(0);
         var rightArmMesh = rightArm.transform.GetChild(0);
         leftArmMesh.transform.localScale = new Vector3(0.02f, relLenght/20.0f, 0.02f);
+        leftArmMesh.transform.localPosition = new Vector3(0, 0, relLenght / 20.0f);
         rightArmMesh.transform.localScale = new Vector3(0.02f, relLenght / 20.0f, 0.02f);
+        rightArmMesh.transform.localPosition = new Vector3(0, 0, relLenght / 20.0f);
+
+        var lefElbow = leftArm.transform.GetChild(1);
+        var rightElbow = rightArm.transform.GetChild(1);
+        leftForeArm.transform.localPosition = new Vector3(0, 0, relLenght / 10);
+        rightForeArm.transform.localPosition = new Vector3(0, 0, relLenght / 10);
+        lefElbow.transform.localPosition = new Vector3(0, 0, relLenght / 10);
+        rightElbow.transform.localPosition = new Vector3(0, 0, relLenght / 10);
         var leftForeArmMesh = leftForeArm.transform.GetChild(0);
         var rightForeArmMesh = rightForeArm.transform.GetChild(0);
         leftForeArmMesh.transform.localScale = new Vector3(0.02f, relLenghtForeArm / 20.0f, 0.02f);
         rightForeArmMesh.transform.localScale = new Vector3(0.02f, relLenghtForeArm / 20.0f, 0.02f);
+        leftForeArmMesh.transform.localPosition = new Vector3(0, 0,  relLenghtForeArm / 20.0f);
+        rightForeArmMesh.transform.localPosition = new Vector3(0, 0, relLenghtForeArm / 20.0f);
+        lengths[0] = relLenght;
+        lengths[1] = relLenghtForeArm;
     }
 }
