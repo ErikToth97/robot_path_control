@@ -8,13 +8,17 @@ public class ArmController : MonoBehaviour
     private Transform leftForeArm, rightForeArm, head;
     private float[] baseLenght = new float[2] { 0.9f, 0.75f };
     public float[] lengths;
-    public bool handsSet = false;
+    public bool handsSet = false, testOther = false;
     // Start is called before the first frame update
     void Start()
     {
         lengths = new float[2] { 0.9f, 0.75f };
-        leftForeArm = leftArm.transform.Find("LeftForeArm");
-        rightForeArm = rightArm.transform.Find("RightForeArm");
+
+        if (!testOther)
+        {
+            leftForeArm = leftArm.transform.Find("LeftForeArm");
+            rightForeArm = rightArm.transform.Find("RightForeArm");
+        }
         head = leftForeArm.root;
         //handsSet = false;
     }
@@ -22,7 +26,15 @@ public class ArmController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (handsSet)
+        if (testOther)
+        {
+            Quaternion lookRotationL = Quaternion.LookRotation((leftForeArm.position - leftArm.transform.parent.position).normalized);
+            leftArm.transform.parent.rotation = lookRotationL;
+
+            Quaternion lookRotationR = Quaternion.LookRotation((rightForeArm.position - rightArm.transform.parent.position).normalized);
+            rightArm.transform.parent.rotation = lookRotationR;
+        }
+        else if (handsSet)
         {
             //var diff = invTM(head,leftHand.transform) - invTM(head, leftArm.transform.parent);
             //var atan = Mathf.Atan2(diff.x, diff.z) * Mathf.Rad2Deg;
@@ -58,8 +70,8 @@ public class ArmController : MonoBehaviour
         var diff = invTM(head, hand) - invTM(head, arm.parent);
         var atan = Mathf.Atan2(diff.x, diff.z) * Mathf.Rad2Deg;
         var lHandRot = (Quaternion.Inverse(head.rotation) * hand.rotation).eulerAngles;
-        Quaternion _lookRotation = Quaternion.LookRotation((hand.position - arm.parent.position).normalized);
-        arm.parent.rotation = _lookRotation;
+        Quaternion lookRotation = Quaternion.LookRotation((hand.position - arm.parent.position).normalized);
+        arm.parent.rotation = lookRotation;
 
         //-lHandRot.eulerAngles.y
         var relArmPos = invTM(arm.parent, arm);
@@ -68,7 +80,7 @@ public class ArmController : MonoBehaviour
         var angles = CalcAngles(relArmPos, relHandPos);
         arm.localRotation = Quaternion.Euler(angles[0] + 90f, 0, 0);
         foreArm.localRotation = Quaternion.Euler(angles[1], 0, 0);
-        arm.parent.rotation = _lookRotation * Quaternion.Euler(0, 0, -lHandRot.y);
+        arm.parent.rotation = lookRotation * Quaternion.Euler(0, 0, -lHandRot.y);
     }
 
     float[] CalcAngles(Vector3 armPos, Vector3 handPos, bool inverse = false)
@@ -180,4 +192,32 @@ public class ArmController : MonoBehaviour
         lengths[0] = relLenght;
         lengths[1] = relLenghtForeArm;
     }
+
+    public void switchTest()
+    {
+        testOther = !testOther;
+        if (testOther)
+        {
+            leftForeArm.SetParent(leftHand.transform, true);
+            leftForeArm.localPosition = new Vector3(0, 0, -lengths[1]-0.05f);
+            leftForeArm.localRotation = new Quaternion();
+            leftArm.transform.localRotation = new Quaternion();
+
+            rightForeArm.SetParent(rightHand.transform, true);
+            rightForeArm.localPosition = new Vector3(0, 0, -lengths[1] - 0.05f);
+            rightForeArm.localRotation = new Quaternion();
+            rightArm.transform.localRotation = new Quaternion();
+        }
+        else
+        {
+            leftForeArm.SetParent(leftArm.transform, true);
+            leftForeArm.localPosition = new Vector3(0, 0, lengths[0]/10.0f);
+            leftForeArm.localRotation = new Quaternion();
+
+            rightForeArm.SetParent(rightArm.transform, true);
+            rightForeArm.localPosition = new Vector3(0, 0, lengths[0]/10.0f);
+            rightForeArm.localRotation = new Quaternion();
+        }
+    }
 }
+
