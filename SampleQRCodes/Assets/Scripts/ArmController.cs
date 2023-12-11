@@ -24,32 +24,51 @@ public class ArmController : MonoBehaviour
     {
         if (handsSet)
         {
-            var diff = invTM(head,leftHand.transform) - invTM(head, leftArm.transform.parent);
-            var atan = Mathf.Atan2(diff.x, diff.z) * Mathf.Rad2Deg;
-            var lHandRot = Quaternion.Inverse(head.rotation) * leftHand.transform.rotation;
-            Quaternion _lookRotation = Quaternion.LookRotation((leftHand.transform.transform.position - leftArm.transform.parent.position).normalized);
-            leftArm.transform.parent.rotation = _lookRotation;
+            //var diff = invTM(head,leftHand.transform) - invTM(head, leftArm.transform.parent);
+            //var atan = Mathf.Atan2(diff.x, diff.z) * Mathf.Rad2Deg;
+            //var lHandRot = Quaternion.Inverse(head.rotation) * leftHand.transform.rotation;
+            //Quaternion _lookRotation = Quaternion.LookRotation((leftHand.transform.transform.position - leftArm.transform.parent.position).normalized);
+            //leftArm.transform.parent.rotation = _lookRotation;
+            //var tm = leftHand.transform.transform;
+            ////-lHandRot.eulerAngles.y
+            //var relArmPos = invTM(leftArm.transform.parent, leftArm.transform);
+            //var relHandPos = invTM(leftArm.transform.parent, leftHand.transform);
+            //var hadREL = relHandPos - relArmPos;
+            //Debug.Log(hadREL);
+            //var leftEndAngles = CalcAngles(relArmPos,relHandPos);
+            //SetAngle(true, leftEndAngles);
+            //leftArm.transform.parent.rotation = _lookRotation * Quaternion.Euler(0, 0, -lHandRot.eulerAngles.y);
+            setJointAngles(leftHand.transform, leftArm.transform, leftForeArm);
 
-            //-lHandRot.eulerAngles.y
-            var relArmPos = invTM(leftArm.transform.parent, leftArm.transform);
-            var relHandPos = invTM(leftArm.transform.parent, leftHand.transform);
-            var hadREL = relHandPos - relArmPos;
-            Debug.Log(hadREL);
-            var leftEndAngles = CalcAngles(relArmPos,relHandPos);
-            SetAngle(true, leftEndAngles);
-            leftArm.transform.parent.rotation = _lookRotation * Quaternion.Euler(0, 0, -lHandRot.eulerAngles.y);
-          
-
-           // var rot = leftArm.transform.rotation.eulerAngles;
+            // var rot = leftArm.transform.rotation.eulerAngles;
             //leftArm.transform.rotation = Quaternion.Euler(rot.x, rot.y, );
 
-            var rightEndAngles = CalcAngles(rightArm.transform.position, rightHand.transform.position);
-            SetAngle(false, rightEndAngles);
-            diff = rightHand.transform.position - rightArm.transform.parent.position;
-            atan = Mathf.Atan2(diff.x, diff.z);
-            var rHandRot = Quaternion.Inverse(head.rotation) * rightHand.transform.rotation;
-            rightArm.transform.parent.rotation = Quaternion.Euler(0, atan * Mathf.Rad2Deg, -rHandRot.eulerAngles.y);
+            //var rightEndAngles = CalcAngles(rightArm.transform.position, rightHand.transform.position);
+            //SetAngle(false, rightEndAngles);
+            //diff = rightHand.transform.position - rightArm.transform.parent.position;
+            //atan = Mathf.Atan2(diff.x, diff.z);
+            //var rHandRot = Quaternion.Inverse(head.rotation) * rightHand.transform.rotation;
+            //rightArm.transform.parent.rotation = Quaternion.Euler(0, atan * Mathf.Rad2Deg, -rHandRot.eulerAngles.y);
+            setJointAngles(rightHand.transform, rightArm.transform, rightForeArm);
         }
+    }
+
+    void setJointAngles(Transform hand, Transform arm, Transform foreArm)
+    {
+        var diff = invTM(head, hand) - invTM(head, arm.parent);
+        var atan = Mathf.Atan2(diff.x, diff.z) * Mathf.Rad2Deg;
+        var lHandRot = (Quaternion.Inverse(head.rotation) * hand.rotation).eulerAngles;
+        Quaternion _lookRotation = Quaternion.LookRotation((hand.position - arm.parent.position).normalized);
+        arm.parent.rotation = _lookRotation;
+
+        //-lHandRot.eulerAngles.y
+        var relArmPos = invTM(arm.parent, arm);
+        var relHandPos = invTM(arm.parent, hand);
+        var hadREL = relHandPos - relArmPos;
+        var angles = CalcAngles(relArmPos, relHandPos);
+        arm.localRotation = Quaternion.Euler(angles[0] + 90f, 0, 0);
+        foreArm.localRotation = Quaternion.Euler(angles[1], 0, 0);
+        arm.parent.rotation = _lookRotation * Quaternion.Euler(0, 0, -lHandRot.y);
     }
 
     float[] CalcAngles(Vector3 armPos, Vector3 handPos, bool inverse = false)
