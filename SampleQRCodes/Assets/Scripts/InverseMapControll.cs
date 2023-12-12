@@ -11,19 +11,23 @@ public class InverseMapControll : MonoBehaviour
     public GameObject futureArm;
     public float futureTime = 1.0f;
     private List<Transform> joints, futureJoints;
+    private Transform rayStartPos, futureRay;
     private List<float[]> savedAngles;
-    private float stepTime = 4.0f, startTime, lastTime;
+    private float stepTime = 3.0f, startTime, lastTime;
     private int ind = 0, futureInd = 1;
     public int branchInd = 0;
     public double tcpdist = 100;
     public GameObject endEffector;
     private Vector3 lastPos;
     private Quaternion lastOri;
+    private List<Vector3> movingPoints, syncPositions;
+    private float[] syncTimes;
 
     private bool lastAnglesSet = false;
     private double[] lastAngles;
     private static float[] testangles;
     private static List<float[]> rotAxis;
+    private List<GameObject> hitPlaces;
     public bool defaultValues = true, savedPath = true, pause = false, startSavedPath = false;
     public int numOfJoint = 6;
     public char[] axisList = new char[6] {'y', 'z', 'z', 'z', 'y', 'z', };
@@ -41,6 +45,8 @@ public class InverseMapControll : MonoBehaviour
             futureJoints.Add(futureJoints[j].GetChild(0));
             rotAxis.Add(new float[3]);
         }
+        rayStartPos = joints[5].GetChild(0).GetChild(0);
+        futureRay = futureJoints[5].GetChild(0).GetChild(0);
         //initAxis();
         initAxis(defaultValues);
 
@@ -56,10 +62,29 @@ public class InverseMapControll : MonoBehaviour
         savedAngles.Add(new float[6] { -79.42f, -4.07f, 88.53f, 5.53f, 90f, 100.57f });
         savedAngles.Add(new float[6] { -131.95f, -1.35f, 85.95f, 5.39f, 90f, 48.04f });
         savedAngles.Add(new float[6] { -115.32f, 52.9f, 55.19f, -18.09f, 90f, 64.67f });
+        syncTimes = new float[savedAngles.Count];
+        for (int i = 0; i < savedAngles.Count; i++)
+        {
+            syncTimes[i] = i * 3.0f;
+        }
         startTime = Time.time;
         lastTime = 0f;
         ind = 1;
-
+        hitPlaces = new List<GameObject>();
+        hitPlaces.Add(new GameObject("Down"));
+        hitPlaces.Add(new GameObject("Up"));
+        hitPlaces.Add(new GameObject("FromBase"));
+        hitPlaces.Add(new GameObject("FutureX"));
+        hitPlaces.Add(new GameObject("FutureY"));
+        movingPoints = new List<Vector3>();
+        syncPositions = new List<Vector3>();
+        syncPositions.Add(new Vector3(0.173f, 0.0f, -0.707f));
+        syncPositions.Add(new Vector3(0.55f,0.33f,-0.42f));
+        syncPositions.Add(new Vector3(0.42f,0.33f,-0.19f));
+        syncPositions.Add(new Vector3(0.84f,0.15f,-0.19f));
+        syncPositions.Add(new Vector3(0.42f,0.33f,-0.19f));
+        syncPositions.Add(new Vector3(0.42f,0.33f,0.24f));
+        syncPositions.Add(new Vector3(0.77f,0.0f,0.25f));
     }
 
     public double[] GetInverse(double[] pose = null, double[] jointOffsets = null, int gripperId = -1)
@@ -213,6 +238,7 @@ public class InverseMapControll : MonoBehaviour
                 {
                     startTime = Time.time;
                     controllRobot(savedAngles[ind]);
+                    Debug.Log(rayStartPos.position);
                     ind++;
                 }
                 else
@@ -224,6 +250,11 @@ public class InverseMapControll : MonoBehaviour
                         newAngles[i] = (1 - t) * savedAngles[ind - 1][i] + t * savedAngles[ind][i];
                     }
                     controllRobot(newAngles);
+                }
+                movingPoints.Add(futureRay.position);
+                if(movingPoints.Count > 5)
+                {
+                    movingPoints.RemoveAt(0);
                 }
             }
             else
@@ -400,6 +431,7 @@ public class InverseMapControll : MonoBehaviour
         {
             pause = true;
             Debug.Log(collider.name + " collided with futureArm/"+obj.name);
+            var collisionData = getCollisionData(collider.transform.position);
         }
         else
         {
@@ -407,5 +439,93 @@ public class InverseMapControll : MonoBehaviour
             Debug.Log(collider.name + " collided with eSeries_UR3e/"+obj.name);
             //FORCE STOP
         }
+    }
+
+    private float[][] getCollisionData(Vector3 collisionPos)
+    {
+        float[][] collisionData = new float[4][];
+        for (int i = 0; i < 3; i++)
+        {
+            collisionData[i] = castRays(i, collisionPos);
+        }
+        
+        return collisionData;
+    }
+    
+    private float[] castRays(int dir, Vector3 collisionPos)
+    {
+        Vector3 origRayPos = rayStartPos.position;
+        float[] rayData = new float[30];
+        RaycastHit hit;
+        int layerMask = 1 << 2;
+        layerMask = ~layerMask;
+        Vector3 moveDir, rayDir, offset;
+        switch (dir)
+        {
+            case 0:
+                moveDir = (futureRay.position - rayStartPos.position).normalized;
+                rayDir = rayStartPos.TransformDirection(Vector3.right);
+                offset = new Vector3(-0.5f, 0, 0);
+                rayStartPos.localPosition += offset;
+                break;
+            case 1:
+                moveDir = (futureRay.position - rayStartPos.position).normalized;
+                rayDir = rayStartPos.TransformDirection(Vector3.left);
+                offset = new Vector3(0.5f, 0, 0);
+                rayStartPos.localPosition += offset;
+                break;
+            case 2:
+                var newPos = joints[0].position;
+                newPos.y = collisionPos.y;
+                rayStartPos.position = newPos;
+                var hitPlace = Instantiate(Resources.Load("HitPlace", typeof(GameObject))) as GameObject;
+                hitPlace.name = "RaySTART";
+                hitPlace.transform.SetParent(hitPlaces[dir].transform);
+                hitPlace.transform.position = newPos;
+                rayDir = (collisionPos-newPos).normalized;
+                moveDir = Quaternion.Euler(0, 90f, 0) * rayDir;
+                //rayDir = rayStartPos.TransformDirection(rayDir);
+                rayStartPos.position -= moveDir*0.15f;
+                hitPlace = Instantiate(Resources.Load("HitPlace", typeof(GameObject))) as GameObject;
+                hitPlace.name = "MoveDIR";
+                hitPlace.transform.SetParent(hitPlaces[dir].transform);
+                hitPlace.transform.position = rayStartPos.position;
+                break;
+            default:
+                moveDir = new Vector3(1,0,0);
+                rayDir = Vector3.forward;
+                offset = new Vector3();
+                break;
+        }
+        moveDir.y = 0;
+        moveDir = moveDir.normalized;
+       
+        var baseRayPos = rayStartPos.position;
+        for (int i = 0; i < rayData.Length; i++)
+        {
+            var rayPos = baseRayPos + i * moveDir * 0.01f;
+            //var rayStartPlace = Instantiate(Resources.Load("HitPlace", typeof(GameObject))) as GameObject;
+            //rayStartPlace.transform.position = rayStartPos.position;
+            //var rayEndPlace = Instantiate(Resources.Load("HitPlace", typeof(GameObject))) as GameObject;
+            //rayEndPlace.transform.position = rayStartPos.position + rayStartPos.TransformDirection(Vector3.right) * 1.5f;
+            if (Physics.Raycast(rayPos, rayDir, out hit, 1.5f, layerMask))
+            {
+                var hitPlace = Instantiate(Resources.Load("HitPlace", typeof(GameObject))) as GameObject;
+                hitPlace.name = "HitPlace_" + dir + "_" + i;
+                hitPlace.transform.SetParent(hitPlaces[dir].transform);
+                hitPlace.transform.position = hit.point;
+                Debug.DrawRay(rayPos, rayDir * hit.distance, Color.yellow);
+                //Debug.Log("Did Hit");
+            }
+            else
+            {
+                var hitPlace = Instantiate(Resources.Load("HitPlace", typeof(GameObject))) as GameObject;
+                hitPlace.name = "MissPlace_" + dir + "_" + i;
+                hitPlace.transform.SetParent(hitPlaces[dir].transform);
+                hitPlace.transform.position = rayPos + rayDir;
+            }
+        }
+        rayStartPos.position = origRayPos;
+        return rayData;
     }
 }
