@@ -528,4 +528,12 @@ public class InverseMapControll : MonoBehaviour
         rayStartPos.position = origRayPos;
         return rayData;
     }
+
+    private float[] calcSpline(float[] data)
+    {
+        float[] ret = new float[30];
+
+        return ret;
+    }
+
 }
