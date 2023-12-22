@@ -355,11 +355,13 @@ public class InverseMapControll : MonoBehaviour
                 double[] angles = GetInverse(endEffector,null, new double[] { -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2, 0, 0 }, -1);
                 if (angles.Length == 6)
                 {
+                    this.transform.GetComponent<URScript>().sendData(angles);
                     float[] anglesf = new float[6];
                     for (int i = 0; i < 6; i++)
                     {
                         anglesf[i] = (float)angles[i] * Mathf.Rad2Deg;
                     }
+                    
                     controllRobot(anglesf);
                 }
             }
