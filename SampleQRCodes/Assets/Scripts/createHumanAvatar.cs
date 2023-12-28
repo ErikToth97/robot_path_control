@@ -9,7 +9,7 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
 {
     // Start is called before the first frame update
     private Transform rightHand, leftHand;
-    private GameObject rightShoulder, leftShoulder, head;
+    private GameObject rightShoulder, leftShoulder, head, rightHandBox, leftHandBox;
     private static bool left = true, both = true, initializedHands = false;
     private float armLength;
     [SerializeField]
@@ -23,8 +23,14 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
         var handJointService = CoreServices.GetInputSystemDataProvider<IMixedRealityHandJointService>();
         if (handJointService != null)
         {
-            rightHand = handJointService.RequestJointTransform(TrackedHandJoint.IndexTip, Microsoft.MixedReality.Toolkit.Utilities.Handedness.Right);
-            leftHand = handJointService.RequestJointTransform(TrackedHandJoint.IndexTip, Microsoft.MixedReality.Toolkit.Utilities.Handedness.Left);
+            rightHand = handJointService.RequestJointTransform(TrackedHandJoint.Palm, Microsoft.MixedReality.Toolkit.Utilities.Handedness.Right);
+            leftHand = handJointService.RequestJointTransform(TrackedHandJoint.Palm, Microsoft.MixedReality.Toolkit.Utilities.Handedness.Left);
+            rightHandBox = Instantiate(Resources.Load("HandBox", typeof(GameObject))) as GameObject;
+            rightHandBox.name = "rightHandBox";
+            rightHandBox.transform.SetParent(rightHand);
+            leftHandBox = Instantiate(Resources.Load("HandBox", typeof(GameObject))) as GameObject;
+            leftHandBox.name = "rightHandBox";
+            leftHandBox.transform.SetParent(leftHand);
             // ...
         }
         armLength = 0.0f;
@@ -77,7 +83,7 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
             float posZ = 0f;
             leftShoulder.transform.position = new Vector3(posX, posY, head.transform.position.z);
             var localLeft = Camera.main.transform.InverseTransformPoint(leftHand.transform.position);
-            armLength = Mathf.Abs(localLeft.z);
+            armLength = (leftHand.transform.position- leftShoulder.transform.position).magnitude;
             leftShoulder.transform.SetParent(head.transform, true);
             left = false;
             Debug.Log("LEFT SHOULDER SET");
@@ -90,7 +96,7 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
             var shoulderConnector = head.transform.Find("ShoulderConnector/ShoulderConnectorMesh");
             rightShoulder.transform.position = new Vector3(posX, posY, leftShoulder.transform.position.z);
             var localRight = Camera.main.transform.InverseTransformPoint(rightHand.transform.position);
-            armLength += Mathf.Abs(localRight.z);
+            armLength += (rightHand.transform.position - rightShoulder.transform.position).magnitude;
             armLength /= 2;
             rightShoulder.transform.SetParent(head.transform, true);
             left = true;
@@ -111,7 +117,7 @@ public class createHumanAvatar : MonoBehaviour, IMixedRealityGestureHandler
             leftShoulder.transform.SetParent(shoulderConnector.parent, true);
             rightShoulder.transform.SetParent(shoulderConnector.parent, true);
 
-            head.GetComponent<ArmController>().setHands(rightHand.gameObject, leftHand.gameObject, armLength);
+            head.GetComponent<ArmController>().setHands(rightHandBox, leftHandBox, armLength);
             initializedHands = true;
             Debug.Log("RIGHT SHOULDER SET");
         }

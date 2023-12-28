@@ -166,7 +166,11 @@ public class ArmController : MonoBehaviour
         leftHand = lHand;
         handsSet = true;
         if (armLenght < 0f)
+        {
+            Debug.Log("NEGATIVE LENGTH");
             armLenght = 1.65f;
+        }
+           
         var total = baseLenght[0] + baseLenght[1];
         var relLenght = baseLenght[0] / total * armLenght;
         var relLenghtForeArm = baseLenght[1] / total * armLenght;

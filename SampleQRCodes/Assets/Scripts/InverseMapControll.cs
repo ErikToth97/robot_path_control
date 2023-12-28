@@ -138,10 +138,11 @@ public class InverseMapControll : MonoBehaviour
 
     public double[] GetInverse(GameObject effector, double[] pose = null, double[] jointOffsets = null, int gripperId = -1)
     {
-        var pos = effector.transform.position * 1000f;
+        var pos = this.transform.InverseTransformPoint(effector.transform.position);
+        pos = pos * 1000f; 
         lastPos = pos;
         double[] full = new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        var ori = effector.transform.rotation.eulerAngles;
+        var ori = (Quaternion.Inverse(this.transform.rotation) * endEffector.transform.rotation).eulerAngles;
         var switchedAxis = new Vector3(ori.x, -ori.z, -ori.y);
         Matrix4x4 rot = Matrix4x4.Rotate(Quaternion.Euler(switchedAxis));
         _inverse.SetInputVariable(new string[] { "Ox", "Oy", "Oz", "ax", "ay", "az", "bx", "by", "bz", "cx", "cy", "cz","tcpdist" }, 
@@ -245,13 +246,35 @@ public class InverseMapControll : MonoBehaviour
     void Update()
     {
 
-       if(splineReady && Time.time - startTime >= 0.15f)
+       if(splineReady && Time.time - startTime >= 0.05f)
        {
+            Debug.Log("1");
+            var futureInd = (int)(futureTime / 0.05f) + 1+splineInd;
+            if (hitPlaces[0].transform.childCount > futureInd)
+            {
+                futureEffector.transform.position = hitPlaces[0].transform.GetChild(futureInd).position;
+                moveToEffector(futureEffector, true);
+            }
+            else if (futureInd - hitPlaces[0].transform.childCount < 6)
+            {
+                //Debug.Log(splineInd + "MOVE TO SYNC");
+                var indDiff = futureInd - hitPlaces[0].transform.childCount;
+                var lastChild = hitPlaces[0].transform.GetChild(hitPlaces[0].transform.childCount - 1);
+                futureEffector.transform.position = lastChild.position + indDiff * (syncPositions[ind] - lastChild.position) / 5;
+                moveToEffector(futureEffector, true);
+            }
+            else
+            {
+                var timeDiff = (futureInd - hitPlaces[0].transform.childCount) * 0.05f - 1.5f;
+                stepRobot(timeDiff, ind+1, true);
+            }
+
             if (splineInd < hitPlaces[0].transform.childCount)
             {
+                //Debug.Log(splineInd + "SPLINE MOVE");
                 var endEff = hitPlaces[0].transform.GetChild(splineInd++);
-                var pos = endEff.transform.position * 1000f;
-                var ori = endEff.transform.rotation;
+                var pos = this.transform.InverseTransformPoint(endEffector.transform.position) * 1000f;
+                var ori = Quaternion.Inverse(this.transform.rotation) * endEffector.transform.rotation;
                 double[] angles = GetInverse(endEff.gameObject, null, new double[] { -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2, 0, 0 }, -1);
                 if (angles.Length == 6)
                 {
@@ -262,17 +285,43 @@ public class InverseMapControll : MonoBehaviour
                     }
                     controllRobot(anglesf);
                 }
+               
+            }
+            else if(splineInd - hitPlaces[0].transform.childCount < 6)
+            {
+                //Debug.Log(splineInd + "MOVE TO SYNC");
+                var indDiff = splineInd- hitPlaces[0].transform.childCount;
+                var lastChild = hitPlaces[0].transform.GetChild(hitPlaces[0].transform.childCount-1);
+                endEffector.transform.position = lastChild.position + indDiff * (syncPositions[ind] - lastChild.position) / 5;
+                double[] angles = GetInverse(endEffector, null, new double[] { -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2, 0, 0 }, -1);
+                if (angles.Length == 6)
+                {
+                    float[] anglesf = new float[6];
+                    for (int i = 0; i < 6; i++)
+                    {
+                        anglesf[i] = (float)angles[i] * Mathf.Rad2Deg;
+                    }
+                    controllRobot(anglesf);
+                }
+                splineInd++;
+            }
+            else
+            {
+                splineReady = false;
+                pause = false;
+                realInd = ind;
             }
             startTime = Time.time;
             return;
         }
        else if (splineReady)
         {
+            Debug.Log("2");
             return;
         }
         if (pause)
         {
-
+            Debug.Log("3");
             startTime = Time.time - realLastTime;
             realStartTime = Time.time - realLastTime;
             return;
@@ -281,6 +330,7 @@ public class InverseMapControll : MonoBehaviour
         realLastTime = Time.time - realStartTime;
         if (realLastTime >= realStepTime)
         {
+            Debug.Log("4");
             var syncInd = getSyncPoint(Time.time - startTime);
             ind = syncInd;
             startTime = Time.time;
@@ -289,8 +339,10 @@ public class InverseMapControll : MonoBehaviour
 
         if (savedPath && startSavedPath)
         {
+            Debug.Log("5");
             if (obstacleAvoidance)
             {
+                Debug.Log("6");
                 if (Time.time - startTime >= 0.05f)
                 {
                     var futureInd = (int)(futureTime / 0.05f)+1;
@@ -320,6 +372,7 @@ public class InverseMapControll : MonoBehaviour
             lastTime = Time.time - startTime;
             if (ind < savedAngles.Count)
             {
+                Debug.Log("7");
                 stepRobot(lastTime, ind, true);
 
                 if (lastTime >= stepTime)
@@ -343,12 +396,13 @@ public class InverseMapControll : MonoBehaviour
         }
         else
         {
+            Debug.Log("8");
             startTime = Time.time;
             realStartTime = Time.time;
             ind = 1;
             realInd = 1;
-            var pos = endEffector.transform.position * 1000f;
-            var ori = endEffector.transform.rotation;
+            var pos = this.transform.InverseTransformPoint(endEffector.transform.position) * 1000f;
+            var ori = Quaternion.Inverse(this.transform.rotation) * endEffector.transform.rotation;
             if (lastPos != pos || lastOri != ori)
             {   // 0 +20 -45
                 lastOri = ori;
@@ -365,6 +419,7 @@ public class InverseMapControll : MonoBehaviour
                     controllRobot(anglesf);
                 }
             }
+            obstacleAvoidance = false;
         }
         //-22.35 41.41 76.87 -28.28 90 157.64
         //
@@ -638,18 +693,19 @@ public class InverseMapControll : MonoBehaviour
                 }
                 var sp = calcSpline(0, 0.015f * spData[0].Length, x, spData[0], 0.015f, spData[0].Length - 1);
                 Vector3 moveDir, rayDir, offset, startPos;
-                float stepSize = x[x.Length - 1] / 50;
+                float stepSize = x[x.Length - 1] / 100;
                 moveDir = syncPositions[syncInd] - rayStartPos.position;
                 moveDir.y = 0;
                 rayDir = Vector3.down;
                 offset = new Vector3(0, 0.5f, 0);
                 startPos = rayStartPos.position + offset;
                 moveDir = moveDir.normalized;
-                for (int i = 0; i < 50; i++)
+                for (int i = 0; i < 100; i++)
                 {
                     var hitPlace = Instantiate(Resources.Load("HitPlace", typeof(GameObject))) as GameObject;
                     hitPlace.name = "Spline_" + i + "_" + hitPlaces[0].transform.childCount;
                     hitPlace.transform.SetParent(hitPlaces[0].transform);
+                    hitPlace.SetActive(false);
                     var move = (i + 1) * moveDir * stepSize;
                     int ind = (int)((i * stepSize+0.001) / 0.015f);
                     float xi = i * stepSize;
@@ -663,6 +719,9 @@ public class InverseMapControll : MonoBehaviour
                     hitPlace.transform.rotation = Quaternion.Euler(0, -180f, 180f);
                 }
                 splineReady = true;
+                ind = syncInd;
+                startTime = Time.time;
+                realInd = syncInd;
                 //for (int i = 0; i < 1; i++)
                 //{
 
